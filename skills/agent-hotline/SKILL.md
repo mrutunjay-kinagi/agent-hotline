@@ -1,17 +1,51 @@
 ---
 name: agent-hotline
-description: Two-terminal hybrid agent workflow with structured handoffs via the agent-hotline CLI.
+description: Structured handoffs for software development workflows (Builder → QA → DevOps).
 ---
 
-# Agent Hotline Workflow
+# Agent Hotline: Software Team Coordination
 
-Use this skill when operating a **Builder** (local model) and **Architect** (cloud model) in the same workspace.
+Use this skill to coordinate Builder, QA, and DevOps agents on the same project.
 
-## Handoff protocol
-- **Before starting work**, run `agent-hotline read` to load the latest handoff.
-- **When handing off**, run `agent-hotline write "<status>. <what changed>. <next step>."`
-- **When a workstream is complete**, run `agent-hotline clear` to reset the state.
+Instead of Slack threads and copy/paste, all agents read/write state to `.hotline.json` for auditable, structured handoffs.
 
-## Role expectations
-- **Builder:** execute concrete edits, tests, and iterations locally.
-- **Architect:** plan, review, and validate high-level structure and risks.
+## The workflow
+
+```
+Builder writes code locally (free)
+    ↓
+QA reads and tests thoroughly
+    ↓
+DevOps reads QA approval and deploys safely
+    ↓
+Cycle repeats
+```
+
+## Commands
+
+### `agent-hotline read`
+Load the latest handoff from the previous agent. Run this first.
+
+### `agent-hotline write "<status>"`
+Hand off your work to the next agent. Example:
+```
+agent-hotline write "OAuth2 implemented. All 15 tests passing. Ready for integration testing."
+```
+
+### `agent-hotline clear`
+Reset the state after deployment. Run this once the feature is live and stable.
+
+## Roles
+
+| Role | Task | Model | Cost |
+|------|------|-------|------|
+| **Builder** | Code generation, unit testing | Local (GPU/CPU) | $0 |
+| **QA** | Integration testing, edge cases | Cloud | $ |
+| **DevOps** | Deployment, monitoring | Cloud | $ |
+
+## Tips
+
+- **Builder:** Run `npm run test` locally before handing off.
+- **QA:** Test aggressively. Include logs in your handoff.
+- **DevOps:** Review staging metrics before going to production.
+- **All:** Keep handoffs brief (2-3 sentences). Commit to git frequently.

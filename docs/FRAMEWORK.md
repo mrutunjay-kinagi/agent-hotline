@@ -1,14 +1,19 @@
-# 🚀 Hybrid Dual-Agent Development Framework
+# 🚀 Agent-Hotline: Structured Developer Workflows
 
-An open-source, model-agnostic workflow that turns two Claude Code terminals into a **Builder + Architect** team.
+An open-source Claude Code skill for **handoff-driven software development**.
 
-Use any local model for the Builder (GPU, CPU, or self-hosted) and any cloud model for the Architect, with `agent-hotline` keeping the handoff state in sync.
+Coordinate Builder → QA → DevOps across separate terminals through `.hotline.json` instead of Slack/email threads.
 
 ---
 
 ## 🧭 The Vision
 
-Build locally with any LLM runner (Ollama, LM Studio, vLLM, llama.cpp, or a custom server) while a cloud model reviews and guides—`agent-hotline` keeps the handoff state synced without copy/paste.
+Developers work in parallel:
+- **Builder** codes locally (free iteration, GPU or CPU)
+- **QA** tests independently (catches edge cases early)
+- **DevOps** deploys with confidence (auditable handoff trail)
+
+Each agent reads the previous state, does their work, and hands off. No copy/paste. No context loss. Async but structured.
 
 ### Architecture
 
@@ -17,26 +22,21 @@ Build locally with any LLM runner (Ollama, LM Studio, vLLM, llama.cpp, or a cust
 │     PROJECT WORKSPACE DIRECTORY          │
 └────────────────────┬─────────────────────┘
                      │
-         ┌───────────┴───────────┐
-         ▼                       ▼
-    ╔════════════════╗   ╔═══════════════════╗
-    ║  TERMINAL 1    ║   ║   TERMINAL 2      ║
-    ║  LOCAL BUILDER ║◄──┤ CLOUD ARCHITECT   │
-    ╠════════════════╣   ╠═══════════════════╣
-    ║ Any Model      ║   ║ Any Model         ║
-    ║ GPU/CPU/Remote ║   ║ Claude/Gemini/etc ║
-    ║ (Free)         ║   ║ (Pay-per-token)   ║
-    ║                ║   ║                   ║
-    ║ Code Gen       ║───│ Plan, Review      ║
-    ║ Testing        │◄──│ Audit, Unblock    ║
-    ║ Heavy Edits    ║   │                   ║
-    ╚════════════════╝   ╚═══════════════════╝
-         ▲                       ▲
-         │   agent-hotline        │
-         │   (Shared State)      │
-         └───────────┬───────────┘
-                     │
-            .hotline.json
+    ┌────────────────┼────────────────┐
+    ▼                ▼                ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ TERMINAL 1  │ │ TERMINAL 2  │ │ TERMINAL 3  │
+│   BUILDER   │ │     QA      │ │   DEVOPS    │
+├─────────────┤ ├─────────────┤ ├─────────────┤
+│ Code Gen    │ │ Test Runs   │ │ Deploy      │
+│ Unit Tests  │ │ Edge Cases  │ │ Monitoring  │
+│ Local Model │ │ Cloud Model │ │ Cloud Model │
+│   (Free)    │ │   ($)       │ │   ($)       │
+└──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+       │                │               │
+       └────────────────┼───────────────┘
+                    .hotline.json
+                (Single source of truth)
 ```
 
 ## ✨ Why Open Source?
@@ -63,51 +63,104 @@ Build locally with any LLM runner (Ollama, LM Studio, vLLM, llama.cpp, or a cust
 
 ## 🎯 Core Roles
 
-### 🏗️ The Builder (Local Model)
-- **Cost:** $0.00 (your hardware)
-- **Speed:** ⚡ Fast (GPU/CPU at hand)
-- **Specialization:** Code generation, scaffolding, heavy edits, testing loops
+### 🏗️ The Builder
+- **Task:** Code generation, scaffolding, unit testing
 - **Model:** Any local runner (Ollama, LM Studio, vLLM, llama.cpp)
+- **Cost:** $0 (your hardware)
+- **Speed:** ⚡ Fast (runs on GPU/CPU)
 
-### 🧠 The Architect (Cloud Model)
+### 🧪 The QA Engineer
+- **Task:** Integration testing, edge case discovery, quality validation
+- **Model:** Cloud model (Claude, GPT, Gemini)
 - **Cost:** $ (pay-per-token, minimal with caching)
-- **Quality:** ✅ High-performance reasoning
-- **Specialization:** Strategic planning, security review, architecture validation, unblocking
-- **Model:** Any cloud provider (Claude, Gemini, etc.)
+- **Speed:** ⚡ Fast (cloud-scaled)
+
+### 🚀 The DevOps Engineer
+- **Task:** Deployment, monitoring, infrastructure validation
+- **Model:** Cloud model (Claude, GPT, Gemini)
+- **Cost:** $ (pay-per-token, minimal with caching)
+- **Speed:** ⚡ Fast (cloud-scaled)
+
+---
+
+## 💡 Why This Structure?
+
+| Metric | Builder | QA | DevOps |
+|--------|---------|-----|--------|
+| **Best for** | Heavy iteration & generation | Finding bugs, edge cases | Safe deployments |
+| **Cost model** | Local (free) | Cloud (pay per test) | Cloud (pay per deploy) |
+| **Independence** | Works offline | Waits for Builder | Waits for QA approval |
 
 ---
 
 ## 🛠️ Getting Started
 
-### 🎛️ Terminal 1: Local Builder
+### Setup
 
-**Example: Ollama with a high-context coding model**
+1. Install the skill in **each** Claude Code terminal:
+   ```bash
+   /plugin install agent-hotline-skills@agent-hotline
+   ```
 
+2. All agents share the same workspace directory (same `.hotline.json`).
+
+### Example: Feature → QA → Deploy
+
+**Terminal 1 (Builder, Local Model):**
 ```bash
-# Create a custom Modelfile with 64k context
-echo -e "FROM qwen3.5\nPARAMETER num_ctx 65536" > Modelfile
-ollama create claude-qwen -f ./Modelfile
+# Read any pending work
+agent-hotline read
 
-# Launch
-ollama launch claude --model claude-qwen
+# Code the feature
+# → Write OAuth2 flow in src/auth/oauth.ts
+# → Write unit tests in tests/auth.test.ts
+# → Run: npm run test (all pass)
+
+# Hand off to QA
+agent-hotline write "Implemented OAuth2 flow. All unit tests passing (15/15). Ready for integration testing."
 ```
 
-> Replace Ollama with any local runner you prefer: LM Studio, vLLM, llama.cpp, text-generation-webui, etc.
-
-### ☁️ Terminal 2: Cloud Architect
-
-**Example: Claude via AWS Bedrock**
-
+**Terminal 2 (QA, Cloud Model):**
 ```bash
-# Set up credentials
-export CLAUDE_CODE_USE_BEDROCK=1
-export AWS_REGION=us-east-1
+# Read the handoff from Builder
+agent-hotline read
 
-# Launch Claude Code with Bedrock backend
-claude
+# Test thoroughly
+# → Run integration tests
+# → Try concurrent requests
+# → Test token expiration edge cases
+
+# Report findings
+agent-hotline write "Found edge case: concurrent token refresh causes race condition. Builder: fix needed before deploying."
 ```
 
-> Works with any cloud provider: OpenAI, Anthropic, Google, Mistral, etc.
+**Terminal 1 (Builder, Local Model):**
+```bash
+# Read the QA report
+agent-hotline read
+
+# Fix the issue
+# → Add mutex lock to token refresh
+# → Run tests again (all pass)
+
+# Hand off to DevOps
+agent-hotline write "Fixed race condition with mutex. All tests passing (18/18). Ready to deploy to staging."
+```
+
+**Terminal 3 (DevOps, Cloud Model):**
+```bash
+# Read the handoff from Builder
+agent-hotline read
+
+# Deploy and monitor
+# → Deploy to staging environment
+# → Run smoke tests
+# → Monitor metrics (latency, errors)
+
+# Final approval
+agent-hotline write "Deployed to staging. All metrics green. Ready for production rollout."
+agent-hotline clear
+```
 
 ---
 
@@ -139,86 +192,106 @@ agent-hotline clear
 ## 🔄 The Ideal Workflow
 
 ```
-[Architect Plans] ──► [Builder Codes] ──► [Architect Reviews] ──► [Repeat]
+[Builder Codes] ──► [QA Tests] ──► [DevOps Deploys] ──► [Repeat]
 ```
 
 ### Step-by-step
 
-1. **📋 Architect writes a scoped plan**
-   ```
-   Ask Architect to break down the issue into concrete steps with success criteria.
-   ```
+1. **🎯 Scope the feature**
+   - PM/Lead writes scope in issue tracker or wiki.
+   - Builder reads scope.
 
-2. **✍️ Architect hands off via agent-hotline**
-   ```bash
-   agent-hotline write "Step 1: Implement JWT validation in src/auth/token.ts. 
-   Tests in tests/auth.test.ts. Success: all tests pass."
-   ```
-
-3. **🏗️ Builder reads and starts building**
+2. **🏗️ Builder implements locally**
    ```bash
    agent-hotline read
-   # → [reads the plan]
-   # → Starts implementing locally (free iteration)
+   # → Read the feature scope
+   
+   # Write code locally (free iteration)
+   npm run test  # All passing
+   
+   agent-hotline write "OAuth2 flow implemented. All unit tests passing (15/15). Ready for integration testing."
    ```
 
-4. **🧪 Builder iterates locally**
+3. **🧪 QA validates thoroughly**
    ```bash
-   # Run tests, compile, refactor—all free compute cycles
-   npm run test
-   npm run build
+   agent-hotline read
+   # → Read Builder's handoff
+   
+   # Run integration tests, edge cases, load tests
+   npm run test:integration
+   
+   agent-hotline write "Integration tests: 18/18 passing. Found 1 edge case: concurrent token refresh. Builder: needs fix."
    ```
 
-5. **📤 Builder hands off results**
+4. **🔧 Builder fixes issues**
    ```bash
-   agent-hotline write "Implemented JWT validation. All 12 tests passing. 
-   Ready for security review."
+   agent-hotline read
+   # → Read QA's findings
+   
+   # Fix and re-test
+   npm run test  # All passing
+   
+   agent-hotline write "Fixed race condition. All tests passing (21/21). Ready for deployment."
    ```
 
-6. **🔍 Architect reviews and validates**
-   ```
-   Read the code, check for security issues, edge cases, architecture fit.
-   ```
-
-7. **✅ Architect clears and approves**
+5. **🚀 DevOps deploys with confidence**
    ```bash
+   agent-hotline read
+   # → Read QA approval + Builder confirmation
+   
+   # Deploy to staging, then production
+   npm run deploy:staging
+   npm run deploy:prod
+   
+   agent-hotline write "Deployed to production. Monitoring: all metrics green. Rollout complete."
    agent-hotline clear
-   # → Cycle complete. Ready for next task.
+   # → Reset state for next feature
    ```
 
 ---
 
 ## 📊 Cost & Performance
 
-| Metric | Local Builder | Cloud Architect |
-|--------|---|---|
-| **💰 Cost** | $0 | $$ (pay-per-token) |
-| **⚡ Speed** | Fast (local) | Fast (cloud) |
-| **🔒 Privacy** | Offline, stays on machine | Secure cloud compliance ring |
-| **🎯 Best for** | Generation, tests, iteration | Planning, review, strategy |
-| **📦 Model** | Any local runner | Any cloud provider |
-| **🖥️ Compute** | Your hardware | Cloud-scaled |
+| Metric | Builder | QA | DevOps |
+|--------|---------|-----|--------|
+| **💰 Cost** | $0 (local) | $ (cloud) | $ (cloud) |
+| **⚡ Speed** | Fast (GPU) | Fast (cloud) | Fast (cloud) |
+| **📦 Model** | Any local runner | Any cloud model | Any cloud model |
+| **🔒 Privacy** | Stays offline | Cloud-secure | Cloud-secure |
+| **Best for** | Iteration loops | Comprehensive testing | Deployment safety |
+
+**Cost savings example:**
+- Builder generates code locally (free) → QA runs 50 test iterations (cloud, $1-5)
+- Traditional: 50 iterations on cloud = $50-100
+- agent-hotline: 49 iterations local + 1 final cloud test = $1-5 ✅ |
 
 ---
 
 ## 🎓 Best Practices
 
-### For the Architect 🧠
-- Write clear, scoped specs with success criteria (not vague goals).
-- Include examples of expected output.
-- Flag security/performance concerns early.
-- Review code for architectural fit, not style.
-
 ### For the Builder 🏗️
-- Read the handoff carefully before starting.
-- Run tests locally before passing back.
-- Keep commits focused and atomic.
-- Ask for clarification if the spec is unclear.
+- Write scoped, modular code (easier to review)
+- Run unit tests locally before handing off
+- Keep commits atomic and descriptive
+- Flag any limitations or assumptions in the handoff
 
-### For both 👥
-- Keep handoffs brief (2-3 sentences of status).
-- Use `agent-hotline clear` to reset between major work streams.
-- Commit to git regularly so changes are visible to both agents.
+### For the QA Engineer 🧪
+- Test aggressively: edge cases, concurrency, error handling
+- Include test logs and reproduction steps in the handoff
+- Don't approve until you're confident
+- Ask Builder for clarification if something's unclear
+
+### For the DevOps Engineer 🚀
+- Review logs and metrics during staging deployment
+- Have a rollback plan before prod deployment
+- Monitor in real time after going live
+- Clear the state only after confirming stability
+
+### For all roles 👥
+- Keep handoffs brief (status + blockers, 2-3 sentences)
+- Commit frequently to git so changes are auditable
+- Use meaningful branch names (e.g., `feature/oauth2`)
+- Close the `.hotline.json` loop: finish what you start
 
 ---
 

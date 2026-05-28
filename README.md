@@ -1,50 +1,72 @@
 # agent-hotline
 
-Open-source, model-agnostic Claude Code skill for turning two terminals into a **Builder + Architect** team.
+Open-source Claude Code skill for **structured handoffs** in software development workflows.
 
-Always-on collaboration between local and cloud agents.
+Pair specialized agents (Builder, QA, DevOps) on separate terminals. They collaborate through `.hotline.json` instead of Slack/email chaos.
 
-Built for people who want a lightweight way to run a local model in one terminal and a cloud model in another, with a shared protocol instead of copy/paste.
+## Why
+
+- **Builder** generates code locally (free iteration)
+- **QA** tests independently (catches issues early)
+- **DevOps** deploys with confidence (auditable handoff trail)
+
+No context loss. No copy/paste. Async coordination that scales.
 
 ## Install
 
 1. Add this repo to your Claude Code plugin marketplace:
    ```
-   /plugin marketplace add multica-ai/agent-hotline
+   /plugin marketplace add mrutunjay-kinagi/agent-hotline
    ```
-2. Install the skill in **both** terminals:
+2. Install the skill in **each** agent terminal:
    ```
    /plugin install agent-hotline-skills@agent-hotline
    ```
 
-## What it gives you
-- A local **Builder** that can run on your GPU, CPU, or any self-hosted setup.
-- A cloud **Architect** that plans, reviews, and clears blockers.
-- A tiny shared protocol through `agent-hotline read`, `write`, and `clear`.
+## Quick start: Feature → QA → Deploy
 
-## Quick start
-1. **Architect** writes a scoped plan and hands off:
-   ```
-   agent-hotline write "Plan ready. Implement feature X in src/... then run tests."
-   ```
-2. **Builder** reads, implements, and updates status:
-   ```
-   agent-hotline read
-   agent-hotline write "Implemented X. Tests: <command>. Needs review."
-   ```
-3. **Architect** reviews and clears:
-   ```
-   agent-hotline clear
-   ```
+**Terminal 1 (Builder):**
+```bash
+agent-hotline write "Feature: OAuth2 flow in src/auth/. Tests needed in tests/auth.test.ts. Ready: ✓"
+```
+
+**Terminal 2 (QA):**
+```bash
+agent-hotline read
+# → Runs tests, finds edge case
+agent-hotline write "Tests: 11/12 passing. Edge case: concurrent token refresh. Needs fix."
+```
+
+**Terminal 1 (Builder):**
+```bash
+agent-hotline read
+# → Fixes concurrent issue
+agent-hotline write "Fixed with mutex lock. All tests passing: 12/12. Ready for deployment."
+```
+
+**Terminal 3 (DevOps):**
+```bash
+agent-hotline read
+# → Deploys to staging
+agent-hotline write "Deployed to staging. Monitoring metrics. All green. Ready for prod."
+agent-hotline clear
+```
 
 ## How it works
-`agent-hotline` stores handoff state in a local `.hotline.json` file so both terminals stay synchronized without copy/paste.
+
+- `agent-hotline write` — Senior/lead agent hands off work
+- `agent-hotline read` — Next agent in chain reads context
+- `agent-hotline clear` — Cycle complete, ready for next feature
+
+All state stored in `.hotline.json` (plaintext, git-tracked, auditable).
 
 ## Learn more
-- **[FRAMEWORK.md](./docs/FRAMEWORK.md)** — architecture, setup examples, workflow philosophy
+
+- **[FRAMEWORK.md](./docs/FRAMEWORK.md)** — workflows, architecture, best practices
 - **[Copilot instructions](./.github/copilot-instructions.md)** — for contributors
 
 ## Community
-- Open an issue for ideas, bug reports, and workflow requests.
-- Send a PR with improvements to the skill, plugin metadata, or documentation.
-- Fork it and adapt the Builder/Architect split to your own local model setup.
+
+- Open an issue with workflow ideas or improvements
+- PR welcome for features, docs, examples
+- Fork and customize for your team's process
