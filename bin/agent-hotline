@@ -1,0 +1,164 @@
+#!/usr/bin/env node
+
+const fs = require("node:fs");
+const path = require("node:path");
+
+const STATE_FILE = ".hotline.json";
+const STATE_PATH = path.resolve(process.cwd(), STATE_FILE);
+
+function defaultState() {
+  return {
+    schemaVersion: 1,
+    current: null,
+    history: [],
+    lastClearedAt: null
+  };
+}
+
+function loadState() {
+  if (!fs.existsSync(STATE_PATH)) {
+    return defaultState();
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
+  } catch (error) {
+    throw new Error(`Unable to parse ${STATE_FILE}: ${error.message}`);
+  }
+
+  return {
+    schemaVersion: typeof parsed.schemaVersion === "number" ? parsed.schemaVersion : 1,
+    current: parsed.current ?? null,
+    history: Array.isArray(parsed.history) ? parsed.history : [],
+    lastClearedAt: parsed.lastClearedAt ?? null
+  };
+}
+
+function saveState(state) {
+  fs.writeFileSync(STATE_PATH, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+function actor() {
+  return process.env.HOTLINE_AUTHOR || process.env.USER || process.env.USERNAME || "unknown";
+}
+
+function handoffEntry(message) {
+  return {
+    type: "handoff",
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    message,
+    author: actor(),
+    createdAt: new Date().toISOString()
+  };
+}
+
+function help() {
+  console.log(`agent-hotline <command>
+
+Commands:
+  write "<message>"   Write a new handoff to .hotline.json
+  read                Read the current handoff
+  status              Show state summary
+  clear               Clear the current handoff
+  help                Show this help`);
+}
+
+function write(message) {
+  const trimmed = message.trim();
+  if (!trimmed) {
+    throw new Error('Missing message. Usage: agent-hotline write "<message>"');
+  }
+
+  const state = loadState();
+  const entry = handoffEntry(trimmed);
+
+  state.current = entry;
+  state.history.push(entry);
+  saveState(state);
+
+  console.log(`Handoff written to ${STATE_PATH}`);
+}
+
+function read() {
+  const state = loadState();
+  if (!state.current) {
+    console.log(`No active handoff in ${STATE_PATH}`);
+    return;
+  }
+
+  const { author, createdAt, message } = state.current;
+  console.log(`From: ${author}`);
+  console.log(`At:   ${createdAt}`);
+  console.log("");
+  console.log(message);
+}
+
+function status() {
+  const state = loadState();
+  const active = state.current ? "yes" : "no";
+  console.log(`State file:      ${STATE_PATH}`);
+  console.log(`Active handoff:  ${active}`);
+  console.log(`History entries: ${state.history.length}`);
+  console.log(`Schema version:  ${state.schemaVersion}`);
+  if (state.lastClearedAt) {
+    console.log(`Last cleared:    ${state.lastClearedAt}`);
+  }
+}
+
+function clear() {
+  const state = loadState();
+  if (!state.current) {
+    console.log(`No active handoff to clear in ${STATE_PATH}`);
+    return;
+  }
+
+  state.history.push({
+    type: "clear",
+    author: actor(),
+    createdAt: new Date().toISOString()
+  });
+  state.current = null;
+  state.lastClearedAt = new Date().toISOString();
+  saveState(state);
+
+  console.log(`Handoff cleared in ${STATE_PATH}`);
+}
+
+function run() {
+  const [command, ...args] = process.argv.slice(2);
+
+  if (!command || command === "help" || command === "--help" || command === "-h") {
+    help();
+    return;
+  }
+
+  if (command === "write") {
+    write(args.join(" "));
+    return;
+  }
+
+  if (command === "read") {
+    read();
+    return;
+  }
+
+  if (command === "status") {
+    status();
+    return;
+  }
+
+  if (command === "clear") {
+    clear();
+    return;
+  }
+
+  throw new Error(`Unknown command: ${command}`);
+}
+
+try {
+  run();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}

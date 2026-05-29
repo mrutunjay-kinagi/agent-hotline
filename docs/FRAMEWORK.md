@@ -2,7 +2,7 @@
 
 An open-source Claude Code skill for **handoff-driven software development**.
 
-Coordinate Builder → QA → DevOps across separate terminals through `.hotline.json` instead of Slack/email threads.
+Coordinate Builder → Architect → DevOps across separate terminals through `.hotline.json` instead of Slack/email threads.
 
 ---
 
@@ -10,7 +10,7 @@ Coordinate Builder → QA → DevOps across separate terminals through `.hotline
 
 Developers work in parallel:
 - **Builder** codes locally (free iteration, GPU or CPU)
-- **QA** tests independently (catches edge cases early)
+- **Architect** tests independently (catches edge cases early)
 - **DevOps** deploys with confidence (auditable handoff trail)
 
 Each agent reads the previous state, does their work, and hands off. No copy/paste. No context loss. Async but structured.
@@ -26,7 +26,7 @@ Each agent reads the previous state, does their work, and hands off. No copy/pas
     ▼                ▼                ▼
 ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
 │ TERMINAL 1  │ │ TERMINAL 2  │ │ TERMINAL 3  │
-│   BUILDER   │ │     QA      │ │   DEVOPS    │
+│   BUILDER   │ │     Architect      │ │   DEVOPS    │
 ├─────────────┤ ├─────────────┤ ├─────────────┤
 │ Code Gen    │ │ Test Runs   │ │ Deploy      │
 │ Unit Tests  │ │ Edge Cases  │ │ Monitoring  │
@@ -69,7 +69,7 @@ Each agent reads the previous state, does their work, and hands off. No copy/pas
 - **Cost:** $0 (your hardware)
 - **Speed:** ⚡ Fast (runs on GPU/CPU)
 
-### 🧪 The QA Engineer
+### 🧪 The Architect Engineer
 - **Task:** Integration testing, edge case discovery, quality validation
 - **Model:** Cloud model (Claude, GPT, Gemini)
 - **Cost:** $ (pay-per-token, minimal with caching)
@@ -85,11 +85,11 @@ Each agent reads the previous state, does their work, and hands off. No copy/pas
 
 ## 💡 Why This Structure?
 
-| Metric | Builder | QA | DevOps |
+| Metric | Builder | Architect | DevOps |
 |--------|---------|-----|--------|
 | **Best for** | Heavy iteration & generation | Finding bugs, edge cases | Safe deployments |
 | **Cost model** | Local (free) | Cloud (pay per test) | Cloud (pay per deploy) |
-| **Independence** | Works offline | Waits for Builder | Waits for QA approval |
+| **Independence** | Works offline | Waits for Builder | Waits for Architect approval |
 
 ---
 
@@ -104,7 +104,7 @@ Each agent reads the previous state, does their work, and hands off. No copy/pas
 
 2. All agents share the same workspace directory (same `.hotline.json`).
 
-### Example: Feature → QA → Deploy
+### Example: Feature → Architect → Deploy
 
 **Terminal 1 (Builder, Local Model):**
 ```bash
@@ -116,11 +116,11 @@ agent-hotline read
 # → Write unit tests in tests/auth.test.ts
 # → Run: npm run test (all pass)
 
-# Hand off to QA
+# Hand off to Architect
 agent-hotline write "Implemented OAuth2 flow. All unit tests passing (15/15). Ready for integration testing."
 ```
 
-**Terminal 2 (QA, Cloud Model):**
+**Terminal 2 (Architect, Cloud Model):**
 ```bash
 # Read the handoff from Builder
 agent-hotline read
@@ -136,7 +136,7 @@ agent-hotline write "Found edge case: concurrent token refresh causes race condi
 
 **Terminal 1 (Builder, Local Model):**
 ```bash
-# Read the QA report
+# Read the Architect report
 agent-hotline read
 
 # Fix the issue
@@ -171,7 +171,7 @@ agent-hotline clear
 Store and sync state through a local file instead of copy/paste:
 
 ```bash
-# Architect writes a task
+# Architect writes a task for Builder
 agent-hotline write "Plan: Implement OAuth2 flow in src/auth/. Builder: run tests after."
 
 # Builder reads and executes
@@ -181,18 +181,64 @@ agent-hotline read
 # Builder updates progress
 agent-hotline write "Implemented OAuth2. All tests passing. Ready for security review."
 
-# Architect reviews and clears
+# DevOps reviews and clears
 agent-hotline clear
 ```
 
 **What gets stored:** `.hotline.json` (plaintext, local, auditable)
+
+Schema:
+
+```json
+{
+  "schemaVersion": 1,
+  "current": {
+    "type": "handoff",
+    "id": "1748490000000-ab12cd",
+    "message": "Implemented OAuth2. All tests passing. Ready for security review.",
+    "author": "alice",
+    "createdAt": "2026-05-29T10:00:00.000Z"
+  },
+  "history": [
+    {
+      "type": "handoff",
+      "id": "1748490000000-ab12cd",
+      "message": "Implemented OAuth2. All tests passing. Ready for security review.",
+      "author": "alice",
+      "createdAt": "2026-05-29T10:00:00.000Z"
+    },
+    {
+      "type": "clear",
+      "author": "bob",
+      "createdAt": "2026-05-29T11:00:00.000Z"
+    }
+  ],
+  "lastClearedAt": "2026-05-29T11:00:00.000Z"
+}
+```
+
+The `author` field captures the system user or custom role name. Set the role explicitly via:
+
+```bash
+export HOTLINE_AUTHOR=builder
+agent-hotline write "..."
+
+export HOTLINE_AUTHOR=architect
+agent-hotline write "..."
+```
+
+Real handoff loop:
+1. `agent-hotline write "<status>"`
+2. `agent-hotline read`
+3. `agent-hotline status`
+4. `agent-hotline clear` after stable deployment
 
 ---
 
 ## 🔄 The Ideal Workflow
 
 ```
-[Builder Codes] ──► [QA Tests] ──► [DevOps Deploys] ──► [Repeat]
+[Builder Codes] ──► [Architect Tests] ──► [DevOps Deploys] ──► [Repeat]
 ```
 
 ### Step-by-step
@@ -212,7 +258,7 @@ agent-hotline clear
    agent-hotline write "OAuth2 flow implemented. All unit tests passing (15/15). Ready for integration testing."
    ```
 
-3. **🧪 QA validates thoroughly**
+3. **🧪 Architect validates thoroughly**
    ```bash
    agent-hotline read
    # → Read Builder's handoff
@@ -226,7 +272,7 @@ agent-hotline clear
 4. **🔧 Builder fixes issues**
    ```bash
    agent-hotline read
-   # → Read QA's findings
+   # → Read Architect's findings
    
    # Fix and re-test
    npm run test  # All passing
@@ -237,7 +283,7 @@ agent-hotline clear
 5. **🚀 DevOps deploys with confidence**
    ```bash
    agent-hotline read
-   # → Read QA approval + Builder confirmation
+   # → Read Architect approval + Builder confirmation
    
    # Deploy to staging, then production
    npm run deploy:staging
@@ -252,7 +298,7 @@ agent-hotline clear
 
 ## 📊 Cost & Performance
 
-| Metric | Builder | QA | DevOps |
+| Metric | Builder | Architect | DevOps |
 |--------|---------|-----|--------|
 | **💰 Cost** | $0 (local) | $ (cloud) | $ (cloud) |
 | **⚡ Speed** | Fast (GPU) | Fast (cloud) | Fast (cloud) |
@@ -261,7 +307,7 @@ agent-hotline clear
 | **Best for** | Iteration loops | Comprehensive testing | Deployment safety |
 
 **Cost savings example:**
-- Builder generates code locally (free) → QA runs 50 test iterations (cloud, $1-5)
+- Builder generates code locally (free) → Architect runs 50 test iterations (cloud, $1-5)
 - Traditional: 50 iterations on cloud = $50-100
 - agent-hotline: 49 iterations local + 1 final cloud test = $1-5 ✅ |
 
@@ -275,7 +321,7 @@ agent-hotline clear
 - Keep commits atomic and descriptive
 - Flag any limitations or assumptions in the handoff
 
-### For the QA Engineer 🧪
+### For the Architect Engineer 🧪
 - Test aggressively: edge cases, concurrency, error handling
 - Include test logs and reproduction steps in the handoff
 - Don't approve until you're confident
