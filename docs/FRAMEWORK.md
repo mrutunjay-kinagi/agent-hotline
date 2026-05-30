@@ -69,7 +69,7 @@ Each agent reads the previous state, does their work, and hands off. No copy/pas
 - **Cost:** $0 (your hardware)
 - **Speed:** ⚡ Fast (runs on GPU/CPU)
 
-### 🧪 The Architect Engineer
+### 🧪 The Architect
 - **Task:** Integration testing, edge case discovery, quality validation
 - **Model:** Cloud model (Claude, GPT, Gemini)
 - **Cost:** $ (pay-per-token, minimal with caching)

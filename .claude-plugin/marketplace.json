@@ -5,14 +5,14 @@
     "name": "multica-ai"
   },
   "metadata": {
-    "description": "Open-source Claude Code skill for a two-terminal Builder + Architect workflow",
+    "description": "Open-source Claude Code skill for a three-terminal Builder + Architect + DevOps workflow",
     "version": "0.1.0"
   },
   "plugins": [
     {
       "name": "agent-hotline-skills",
       "source": "./",
-      "description": "Structured handoffs between a local Builder and cloud Architect in a shared workspace",
+      "description": "Structured handoffs between a local Builder, cloud Architect, and cloud DevOps in a shared workspace",
       "version": "0.1.0",
       "author": {
         "name": "multica-ai"

@@ -1,7 +1,7 @@
 {
   "name": "agent-hotline",
   "version": "0.1.0",
-  "description": "Structured Builder -> QA -> DevOps handoffs via .hotline.json",
+  "description": "Structured Builder -> Architect -> DevOps handoffs via .hotline.json",
   "bin": {
     "agent-hotline": "bin/agent-hotline"
   },
@@ -13,5 +13,5 @@
     "type": "git",
     "url": "git+https://github.com/mrutunjay-kinagi/agent-hotline.git"
   },
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
